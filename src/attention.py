@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.metrics import confusion_matrix, accuracy_score, ConfusionMatrixDisplay
 from sklearn.neighbors import KNeighborsClassifier
 from joblib import dump
 
@@ -37,6 +37,15 @@ grid = GridSearchCV(knn, param_grid=parameter_grid, cv=10, scoring='accuracy', r
 grid_model = grid.fit(X=x_train, y=y_train)
 accuracy = grid_model.best_score_ * 100
 print(f"The Accuracy of the trained model : {accuracy}")
+print("Testing the model Performance")
+y_predicted = grid_model.predict(x_test)
+cm = confusion_matrix(y_test, y_pred=y_predicted)
+print(cm)
 if accuracy > 71:
     dump(grid_model, "models/attention_dataset.joblib")
     print("Saving te model")
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=grid_model.classes_)
+disp.plot(cmap=plt.cm.Blues)  # Optional: add a colormap for nicer visuals
+plt.title("Confusion Matrix for KNN Classifier")
+plt.savefig("figures/attention_dataset_cm.png")
+plt.show()
