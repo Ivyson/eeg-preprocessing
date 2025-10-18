@@ -38,5 +38,5 @@ grid_model = grid.fit(X=x_train, y=y_train)
 accuracy = grid_model.best_score_ * 100
 print(f"The Accuracy of the trained model : {accuracy}")
 if accuracy > 71:
-    dump(grid_model, "datasets/attention_dataset.joblib")
+    dump(grid_model, "models/attention_dataset.joblib")
     print("Saving te model")
