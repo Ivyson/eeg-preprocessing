@@ -1,36 +1,55 @@
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import confusion_matrix, accuracy_score, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.neighbors import KNeighborsClassifier
 from joblib import dump
 
-dataframe = pd.read_csv("datasets/acquiredDataset.csv")
+src_data = "datasets/acquiredDataset.csv"
+model_path = "models/attention.joblib"
+dataframe = pd.read_csv(src_data)
 results = []
-for val in dataframe['attention']:
+
+for val in dataframe["attention"]:
     if val >= 50:
-        results.append('1')
+        results.append("1")
     else:
-        results.append('0')
-dataframe['result'] = results
-print(f"You Currently have {dataframe['classification'].value_counts()} Classifications")
-y = dataframe.pop('classification')
+        results.append("0")
+dataframe["result"] = results
+print(
+    f"You Currently have {dataframe['classification'].value_counts()} Classifications"
+)
+y = dataframe.pop("classification")
 scaler = StandardScaler()
 X = scaler.fit_transform(dataframe)
-dataframe = dataframe.drop(columns=['attention']) # Removes the attention column
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=46) # Have a 70-30 train 
-                                                                                          # to test data
-                                                                                          # Random state 46, 
-                                                                                          #gives 73% accuracy
+dataframe = dataframe.drop(columns=["attention"])  # Removes the attention column
+print(f"Columns in dataframe: {dataframe.columns.tolist()}")
+print(f"Shape: {dataframe.shape}")
+x_train, x_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=46
+)  # Have a 70-30 train
+# to test data
+# Random state 46,
+# gives 73% accuracy
+# Load the model to the permanent storage
+
 
 knn = KNeighborsClassifier()
-k_range = [x  for x in range(1, 35) if x % 2 > 0] # On 35. we are getting max accuracy of: 71%
+k_range = [
+    x for x in range(1, 35) if x % 2 > 0
+]  # On 35. we are getting max accuracy of: 71%
 # print(k_range)
-parameter_grid = dict(n_neighbors = k_range)
+parameter_grid = dict(n_neighbors=k_range)
 
-grid = GridSearchCV(knn, param_grid=parameter_grid, cv=10, scoring='accuracy', return_train_score=False, verbose=1)
+grid = GridSearchCV(
+    knn,
+    param_grid=parameter_grid,
+    cv=10,
+    scoring="accuracy",
+    return_train_score=False,
+    verbose=1,
+)
 
 
 # Now, Train the model on the splitted data
