@@ -3,7 +3,7 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtWidgets
 import mne
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from scipy.signal import welch
 
@@ -14,29 +14,19 @@ pg.setConfigOptions(antialias=True)  # smoother lines
 class EEGVisualization(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-
-        # EEG parameters
         self.n_channels = 8
         self.sample_rate = 250  # Hz
         self.window_size = 500  # samples to display
         self.buffer_size = self.window_size
-
-        # Channel names
         self.channel_names = ["Fp1", "Fp2", "F3", "F4", "C3", "C4", "P3", "P4"]
-
-        # Create MNE Info object with standard montage
         self.info = mne.create_info(
             ch_names=self.channel_names, sfreq=self.sample_rate, ch_types="eeg"
         )
         self.info.set_montage("standard_1020")
-
-        # Data buffers (n_channels x buffer_size)
         self.signal_buffer = np.zeros((self.n_channels, self.buffer_size))
         self.time_axis = np.arange(self.buffer_size) / self.sample_rate
-
-        # Stacking offsets (vertical offsets for each channel)
-        self.offset_step = 60.0  # µV per channel offset; adjust visually
-        # Offsets arranged top-to-bottom
+        self.offset_step = 60.0   
+        
         self.offsets = np.arange(self.n_channels)[::-1] * self.offset_step
 
         # Channel visibility flags
@@ -64,12 +54,10 @@ class EEGVisualization(QtWidgets.QWidget):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_plots)
         self.timer.start(40)  # ~25 FPS
-
-        # Simulation time
         self.t = 0
 
     def setup_ui(self):
-        self.setWindowTitle("Real-Time EEG Visualization (stacked traces + PSD)")
+        self.setWindowTitle("EEG Data Visualization")
         self.setGeometry(100, 100, 1600, 1000)
 
         main_layout = QtWidgets.QVBoxLayout()
@@ -78,7 +66,7 @@ class EEGVisualization(QtWidgets.QWidget):
         top_hlayout = QtWidgets.QHBoxLayout()
 
         # Single consolidated stacked signal plot (all channels overlayed with offsets)
-        self.signal_plot = pg.PlotWidget(title="EEG Signals (stacked traces)")
+        self.signal_plot = pg.PlotWidget(title="EEG Signals")
         self.signal_plot.setXRange(0, self.window_size / self.sample_rate)
         self.signal_plot.showGrid(x=True, y=True, alpha=0.3)
         self.signal_plot.setLabel("bottom", "Time", units="s")
@@ -87,7 +75,7 @@ class EEGVisualization(QtWidgets.QWidget):
         total_height = self.offset_step * (self.n_channels - 1) + 200
         self.signal_plot.setYRange(-100, total_height - 100)
 
-        # Create one curve per channel, overlayed in the same axes (with offsets)
+        # Create one curve per channel, in the same axes (with offsets)
         self.signal_curves = []
         for i in range(self.n_channels):
             pen = pg.mkPen(color=self.colors[i], width=1.5)
@@ -104,7 +92,7 @@ class EEGVisualization(QtWidgets.QWidget):
         right_layout = QtWidgets.QVBoxLayout()
 
         # PSD widget
-        self.psd_widget = pg.PlotWidget(title="Power Spectral Density (0-60 Hz)")
+        self.psd_widget = pg.PlotWidget(title="Power Spectral Density")
         self.psd_widget.setLabel("left", "PSD (dB/Hz)")
         self.psd_widget.setLabel("bottom", "Frequency (Hz)")
         self.psd_widget.showGrid(x=True, y=True, alpha=0.3)
@@ -126,8 +114,6 @@ class EEGVisualization(QtWidgets.QWidget):
         self.legend_toggle_btn = QtWidgets.QPushButton("Show Legend")
         self.legend_toggle_btn.setCheckable(True)
         self.legend_toggle_btn.toggled.connect(self.toggle_legend_panel)
-
-        # Legend panel (collapsible) with checkboxes to toggle channel visibility
         self.legend_panel = QtWidgets.QWidget()
         legend_layout = QtWidgets.QVBoxLayout()
         legend_layout.setContentsMargins(2, 2, 2, 2)
@@ -152,7 +138,6 @@ class EEGVisualization(QtWidgets.QWidget):
         self.legend_panel.setLayout(legend_layout)
         self.legend_panel.setVisible(False)  # start collapsed
 
-        # Assemble right layout
         right_layout.addWidget(self.psd_widget, stretch=3)
         right_layout.addWidget(self.legend_toggle_btn, stretch=0)
         right_layout.addWidget(self.legend_panel, stretch=1)
@@ -160,20 +145,16 @@ class EEGVisualization(QtWidgets.QWidget):
 
         top_hlayout.addWidget(self.signal_plot, stretch=3)
         top_hlayout.addWidget(right_panel, stretch=1)
-
-        # Bottom: headplot and confidence trace (unchanged)
         bottom_widget = QtWidgets.QWidget()
         bottom_layout = QtWidgets.QHBoxLayout()
 
         self.headplot_canvas = MplCanvas(width=5, height=5, dpi=100)
         self.setup_headplot()
-
-        # Confidence plot (0 - 100%)
-        self.conf_widget = pg.PlotWidget(title="Concentration Confidence (%)")
+        self.conf_widget = pg.PlotWidget(title="Concentration Percentage")
         self.conf_widget.setBackground("w")
         self.conf_widget.showGrid(x=True, y=True, alpha=0.3)
         self.conf_widget.setYRange(0, 100)
-        self.conf_widget.getAxis("left").setLabel("Confidence (%)")
+        self.conf_widget.getAxis("left").setLabel("Percentage (%)")
         self.conf_curve = self.conf_widget.plot(
             self.conf_time, self.conf_buffer, pen=pg.mkPen("b", width=2)
         )
@@ -233,7 +214,7 @@ class EEGVisualization(QtWidgets.QWidget):
             sensors=False,
         )
 
-        ax.set_title("Scalp (µV)", fontsize=12, fontweight="bold")
+        ax.set_title("Scalp Magnetometer (Tesla)", fontsize=12, fontweight="bold")
         self.headplot_canvas.figure.tight_layout()
         self.headplot_canvas.draw()
 
@@ -266,8 +247,13 @@ class EEGVisualization(QtWidgets.QWidget):
 
     def update_classification(self):
         """Simulate a single confidence value and update rolling buffer."""
-        base = np.clip(np.random.normal(0.6, 0.15), 0.0, 1.0)
-        self.confidence = 0.9 * self.confidence + 0.1 * base
+        mean = 0.6
+        std = 0.15
+        alpha = 0.1
+        rng = np.random.default_rng()
+        base = float(rng.normal(mean, std))
+        base = float(np.clip(base, 0.0, 1.0))
+        self.confidence = 0.9 * self.confidence + 0.1 * base - alpha * (self.confidence - 0.5)
         self.conf_buffer = np.roll(self.conf_buffer, -1)
         self.conf_buffer[-1] = self.confidence * 100.0
 
